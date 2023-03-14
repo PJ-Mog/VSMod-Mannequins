@@ -79,11 +79,46 @@ namespace Mannequins {
         return;
       }
 
-      if (!byEntity.World.Claims.TryAccess(byPlayer, Pos.AsBlockPos, EnumBlockAccessFlags.Use)) {
+      if (byEntity.Controls.Sneak && byPlayer.InventoryManager.ActiveHotbarSlot.Empty && TryPickUp(byPlayer)) {
         return;
       }
 
       ToggleInventoryDialog(byPlayer);
+    }
+
+    protected virtual bool TryPickUp(IPlayer byPlayer) {
+      if (!byPlayer.Entity.World.Claims.TryAccess(byPlayer, Pos.AsBlockPos, EnumBlockAccessFlags.BuildOrBreak)) {
+        byPlayer.InventoryManager.ActiveHotbarSlot.MarkDirty();
+        WatchedAttributes.MarkAllDirty();
+        return false;
+      }
+
+      for (int i = 0; i < GearInventory.Count; i++) {
+        if (!GearInventory[i].Empty) {
+          return false;
+        }
+      }
+
+      ItemStack stack = GetAsItemStack();
+      if (stack == null) {
+        return false;
+      }
+
+      if (!byPlayer.Entity.TryGiveItemStack(stack)) {
+        World.SpawnItemEntity(stack, Pos.XYZ);
+      }
+      Die();
+      return true;
+    }
+
+    protected virtual ItemStack GetAsItemStack() {
+      AssetLocation collectibleMannequinLocation = Code.Clone();
+      CollectibleObject collectibleMannequin = World.GetItem(collectibleMannequinLocation) as CollectibleObject ?? World.GetBlock(collectibleMannequinLocation);
+      if (collectibleMannequin == null) {
+        World.Logger.Error("[Mannequins] Could not pick up mannequin ({0}). No such collectible: {1}", EntityId, collectibleMannequinLocation);
+        return null;
+      }
+      return new ItemStack(collectibleMannequin);
     }
 
     protected virtual void ToggleInventoryDialog(IPlayer player) {
@@ -91,11 +126,15 @@ namespace Mannequins {
         InventoryDialog.TryClose();
       }
       else {
-        OpenInventory(player);
+        TryOpenInventory(player);
       }
     }
 
-    protected virtual void OpenInventory(IPlayer player) {
+    protected virtual void TryOpenInventory(IPlayer player) {
+      if (!World.Claims.TryAccess(player, Pos.AsBlockPos, EnumBlockAccessFlags.Use)) {
+        return;
+      }
+
       player.InventoryManager.OpenInventory(GearInventory);
 
       if (Api is ICoreClientAPI capi && InventoryDialog == null) {
