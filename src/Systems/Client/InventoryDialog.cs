@@ -1,3 +1,4 @@
+using System;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Config;
@@ -10,6 +11,12 @@ namespace Mannequins.Client {
     protected EntityMannequin owningEntity;
 
     protected Vec3d entityPos = new Vec3d();
+
+    protected double FloatyDialogPosition => 0.6;
+
+    protected double FloatyDialogAlign => 0.8;
+
+    protected bool IsInRangeOfEntity => capi.World.Player.Entity.Pos.XYZ.Add(capi.World.Player.Entity.LocalEyePos).SquareDistanceTo(entityPos) <= Math.Pow(capi.World.Player.WorldData.PickingRange, 2);
 
     public override string DebugName => "mannequin-inventory-dialog";
 
@@ -55,6 +62,17 @@ namespace Mannequins.Client {
       SingleComposer.Compose();
     }
 
+    public override void OnFinalizeFrame(float dt) {
+      base.OnFinalizeFrame(dt);
+      entityPos = owningEntity.Pos.XYZ.Clone();
+      entityPos.Add(owningEntity.SelectionBox.X2 - owningEntity.OriginSelectionBox.X2, 0.0, owningEntity.SelectionBox.Z2 - owningEntity.OriginSelectionBox.Z2);
+      if (!IsInRangeOfEntity) {
+        capi.Event.EnqueueMainThreadTask(delegate {
+          TryClose();
+        }, "closedmannequindlg");
+      }
+    }
+
     public override void OnGuiClosed() {
       base.OnGuiClosed();
       capi.Network.SendPacketClient(capi.World.Player.InventoryManager.CloseInventory(inv));
@@ -63,6 +81,25 @@ namespace Mannequins.Client {
       SingleComposer.GetSlotGrid("armorSlotsLegs")?.OnGuiClosed(capi);
       SingleComposer.GetSlotGrid("leftSlots")?.OnGuiClosed(capi);
       SingleComposer.GetSlotGrid("rightSlots")?.OnGuiClosed(capi);
+    }
+
+    public override void OnRenderGUI(float deltaTime) {
+      if (capi.Settings.Bool["immersiveMouseMode"]) {
+        double offX = owningEntity.SelectionBox.X2 - owningEntity.OriginSelectionBox.X2;
+        double offZ = owningEntity.SelectionBox.Z2 - owningEntity.OriginSelectionBox.Z2;
+        Vec3d pos = MatrixToolsd.Project(new Vec3d(owningEntity.Pos.X + offX, owningEntity.Pos.Y + FloatyDialogPosition, owningEntity.Pos.Z + offZ), capi.Render.PerspectiveProjectionMat, capi.Render.PerspectiveViewMat, capi.Render.FrameWidth, capi.Render.FrameHeight);
+        if (pos.Z < 0.0) {
+          return;
+        }
+        SingleComposer.Bounds.Alignment = EnumDialogArea.None;
+        SingleComposer.Bounds.fixedOffsetX = 0.0;
+        SingleComposer.Bounds.fixedOffsetY = 0.0;
+        SingleComposer.Bounds.absFixedX = pos.X - SingleComposer.Bounds.OuterWidth / 2.0;
+        SingleComposer.Bounds.absFixedY = (double)capi.Render.FrameHeight - pos.Y - SingleComposer.Bounds.OuterHeight * FloatyDialogAlign;
+        SingleComposer.Bounds.absMarginX = 0.0;
+        SingleComposer.Bounds.absMarginY = 0.0;
+      }
+      base.OnRenderGUI(deltaTime);
     }
 
     protected void OnTitleBarClose() {
