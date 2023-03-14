@@ -1,10 +1,10 @@
 {
   "type": "Code",
-  "name": "TEMPLATE",
-  "modid": "template",
+  "name": "Mannequins",
+  "modid": "mannequins",
   "version": "1.0.0",
-  "description": "A template project for Vintage Story modding.",
-  "website": "https://github.com/PJ-Mog/VSMod-TEMPLATE",
+  "description": "A place to store extra outfits.",
+  "website": "https://github.com/PJ-Mog/VSMod-Mannequins",
   "authors": [ "JapanHasRice" ],
   "contributors": [],
   "dependencies": {
