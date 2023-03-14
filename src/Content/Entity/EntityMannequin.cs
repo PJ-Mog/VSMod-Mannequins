@@ -83,17 +83,33 @@ namespace Mannequins {
         return;
       }
 
-      byPlayer.InventoryManager.OpenInventory(GearInventory);
+      ToggleInventoryDialog(byPlayer);
+    }
+
+    protected virtual void ToggleInventoryDialog(IPlayer player) {
+      if (InventoryDialog?.IsOpened() ?? false) {
+        InventoryDialog.TryClose();
+      }
+      else {
+        OpenInventory(player);
+      }
+    }
+
+    protected virtual void OpenInventory(IPlayer player) {
+      player.InventoryManager.OpenInventory(GearInventory);
+
       if (Api is ICoreClientAPI capi && InventoryDialog == null) {
         InventoryDialog = new InventoryDialog(inv, this, capi);
         if (InventoryDialog.TryOpen()) {
-          capi.Network.SendPacketClient(inv.Open(byPlayer));
+          capi.Network.SendPacketClient(inv.Open(player));
         }
-        InventoryDialog.OnClosed += delegate {
-          InventoryDialog.Dispose();
-          InventoryDialog = null;
-        };
+        InventoryDialog.OnClosed += OnInventoryDialogClosed;
       }
+    }
+
+    protected virtual void OnInventoryDialogClosed() {
+      InventoryDialog.Dispose();
+      InventoryDialog = null;
     }
 
     public virtual void OnTakeClothes(EntityAgent byEntity, ItemSlot slot, Vec3d hitPosition) {
