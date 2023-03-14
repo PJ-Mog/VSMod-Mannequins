@@ -1,0 +1,17 @@
+{
+  "type": "Code",
+  "name": "TEMPLATE",
+  "modid": "template",
+  "version": "1.0.0",
+  "description": "A template project for Vintage Story modding.",
+  "website": "https://github.com/PJ-Mog/VSMod-TEMPLATE",
+  "authors": [ "JapanHasRice" ],
+  "contributors": [],
+  "dependencies": {
+    "game": "",
+    "survival": ""
+  },
+  "side": "Universal",
+  "requiredOnClient": true,
+  "requiredOnServer": true
+}
