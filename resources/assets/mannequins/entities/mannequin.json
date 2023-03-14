@@ -23,7 +23,6 @@
     "texture": { "base": "game:entity/humanoid/seraph-naked-hairless" },
     "behaviors": [
       { "code": "repulseagents" },
-      { "code": "controlledphysics", "stepHeight": 1.1 },
       { "code": "interpolateposition" },
       { "code": "extraskinnable" }
     ]
@@ -31,7 +30,6 @@
   "server": {
     "behaviors": [
       { "code": "repulseagents" },
-      { "code": "controlledphysics", "stepHeight": 1.1  },
       { "code": "extraskinnable" }
     ]
   }
