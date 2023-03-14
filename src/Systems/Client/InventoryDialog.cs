@@ -18,8 +18,6 @@ namespace Mannequins.Client {
 
     protected bool IsInRangeOfEntity => capi.World.Player.Entity.Pos.XYZ.Add(capi.World.Player.Entity.LocalEyePos).SquareDistanceTo(entityPos) <= Math.Pow(capi.World.Player.WorldData.PickingRange, 2);
 
-    public override string DebugName => "mannequin-inventory-dialog";
-
     public override double DrawOrder => 0.2;
 
     public override bool UnregisterOnClose => true;
@@ -50,7 +48,7 @@ namespace Mannequins.Client {
       leftSlotBounds.fixedHeight -= 6.0;
       rightSlotBounds.fixedHeight -= 6.0;
 
-      SingleComposer = capi.Gui.CreateCompo("mannequincontents" + owningEntity.EntityId, dialogBounds).AddShadedDialogBG(bgBounds).AddDialogTitleBar(Lang.Get("mannequins:mannequin-contents"), OnClose: OnTitleBarClose);
+      SingleComposer = capi.Gui.CreateCompo("mannequincontents" + owningEntity.EntityId, dialogBounds).AddShadedDialogBG(bgBounds).AddDialogTitleBar(Lang.Get("mannequins:item-mannequin"), OnClose: OnTitleBarClose);
       SingleComposer.BeginChildElements(bgBounds)
         .AddItemSlotGrid(inv, SendInvPacket, 1, new int[1] { 12 }, leftArmorSlotBoundsHead, "amorSlotsHead")
         .AddItemSlotGrid(inv, SendInvPacket, 1, new int[1] { 13 }, leftArmorSlotBoundsBody, "armorSlotsBody")

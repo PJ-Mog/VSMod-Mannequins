@@ -3,6 +3,7 @@ using Mannequins.Client;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Common.Entities;
+using Vintagestory.API.Config;
 using Vintagestory.API.Datastructures;
 using Vintagestory.API.MathTools;
 using Vintagestory.API.Server;
@@ -13,7 +14,6 @@ namespace Mannequins {
     protected static readonly int OpenInventoryPacketId = 1000;
     protected static readonly int CloseInventoryPacketId = 1001;
     protected static readonly string InventoryAttributeKey = "inventory";
-
     protected InventoryGeneric inv;
     protected float fireDamage = 0f;
 
@@ -57,6 +57,15 @@ namespace Mannequins {
         return new ItemSlotSurvival(self);
       }
       return new ItemSlotCharacter((EnumCharacterDressType)slotId, self);
+    }
+
+    public override string GetName() {
+      string key = Code.Domain + ":item-";
+      if (!Alive) {
+        key += "broken-";
+      }
+      key += Code.Path;
+      return Lang.GetMatching(key);
     }
 
     public override void FromBytes(BinaryReader reader, bool forClient) {
