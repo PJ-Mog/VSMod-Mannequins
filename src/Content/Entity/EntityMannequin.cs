@@ -101,7 +101,6 @@ namespace Mannequins {
     }
 
     public override void OnReceivedServerPacket(int packetid, byte[] data) {
-      Api.Logger.Debug("[Mannequins] packet received from server, id: {0}", packetid);
       if (packetid == CloseInventoryPacketId) {
         (World as IClientWorldAccessor).Player.InventoryManager.CloseInventory(GearInventory);
         if (InventoryDialog?.IsOpened() ?? false) {

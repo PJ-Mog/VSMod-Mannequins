@@ -26,7 +26,6 @@ namespace Mannequins {
 
       EntityProperties type = api.World.GetEntityType(Code);
       Entity entity = api.World.ClassRegistry.CreateEntity(type);
-      api.Logger.Debug("[Mannequins] entity {0}", entity);
       if (entity == null) {
         return;
       }
