@@ -1,5 +1,6 @@
 {
   "code": "mannequin",
+  "class": "ItemMannequin",
   "shape": {
     "base": "game:entity/humanoid/seraph-faceless"
   },

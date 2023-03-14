@@ -5,6 +5,7 @@ namespace Mannequins {
     public override void Start(ICoreAPI api) {
       base.Start(api);
 
+      api.RegisterItemClass("ItemMannequin", typeof(ItemMannequin));
       api.RegisterEntity("EntityMannequin", typeof(EntityMannequin));
     }
   }
