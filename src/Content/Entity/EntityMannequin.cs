@@ -5,10 +5,13 @@ using Vintagestory.API.Common;
 using Vintagestory.API.Common.Entities;
 using Vintagestory.API.Datastructures;
 using Vintagestory.API.MathTools;
+using Vintagestory.API.Server;
 using Vintagestory.GameContent;
 
 namespace Mannequins {
   public class EntityMannequin : EntityHumanoid {
+    protected static readonly int OpenInventoryPacketId = 1000;
+    protected static readonly int CloseInventoryPacketId = 1001;
     protected static readonly string InventoryAttributeKey = "inventory";
 
     protected InventoryGeneric inv;
@@ -86,6 +89,39 @@ namespace Mannequins {
       ToggleInventoryDialog(byPlayer);
     }
 
+    public override void OnReceivedClientPacket(IServerPlayer player, int packetid, byte[] data) {
+      base.OnReceivedClientPacket(player, packetid, data);
+
+      if (packetid == OpenInventoryPacketId) {
+        player.InventoryManager.OpenInventory(GearInventory);
+      }
+      if (packetid == CloseInventoryPacketId) {
+        player.InventoryManager.CloseInventory(GearInventory);
+      }
+    }
+
+    public override void OnReceivedServerPacket(int packetid, byte[] data) {
+      Api.Logger.Debug("[Mannequins] packet received from server, id: {0}", packetid);
+      if (packetid == CloseInventoryPacketId) {
+        (World as IClientWorldAccessor).Player.InventoryManager.CloseInventory(GearInventory);
+        if (InventoryDialog?.IsOpened() ?? false) {
+          InventoryDialog?.TryClose();
+        }
+      }
+    }
+
+    public override void OnEntityDespawn(EntityDespawnData despawn) {
+      base.OnEntityDespawn(despawn);
+
+      InventoryDialog?.TryClose();
+
+      switch (despawn.Reason) {
+        case EnumDespawnReason.PickedUp:
+          DropInventory();
+          break;
+      }
+    }
+
     protected virtual bool TryPickUp(IPlayer byPlayer) {
       if (!byPlayer.Entity.World.Claims.TryAccess(byPlayer, Pos.AsBlockPos, EnumBlockAccessFlags.BuildOrBreak)) {
         byPlayer.InventoryManager.ActiveHotbarSlot.MarkDirty();
@@ -107,7 +143,7 @@ namespace Mannequins {
       if (!byPlayer.Entity.TryGiveItemStack(stack)) {
         World.SpawnItemEntity(stack, Pos.XYZ);
       }
-      Die();
+      Die(EnumDespawnReason.PickedUp);
       return true;
     }
 
@@ -123,7 +159,7 @@ namespace Mannequins {
 
     protected virtual void ToggleInventoryDialog(IPlayer player) {
       if (InventoryDialog?.IsOpened() ?? false) {
-        InventoryDialog.TryClose();
+        InventoryDialog?.TryClose();
       }
       else {
         TryOpenInventory(player);
@@ -135,18 +171,20 @@ namespace Mannequins {
         return;
       }
 
-      player.InventoryManager.OpenInventory(GearInventory);
-
       if (Api is ICoreClientAPI capi && InventoryDialog == null) {
         InventoryDialog = new InventoryDialog(inv, this, capi);
         if (InventoryDialog.TryOpen()) {
-          capi.Network.SendPacketClient(inv.Open(player));
+          player.InventoryManager.OpenInventory(GearInventory);
+          capi.Network.SendEntityPacket(EntityId, OpenInventoryPacketId);
         }
         InventoryDialog.OnClosed += OnInventoryDialogClosed;
       }
     }
 
     protected virtual void OnInventoryDialogClosed() {
+      var capi = Api as ICoreClientAPI;
+      capi.World.Player.InventoryManager.CloseInventory(GearInventory);
+      capi.Network.SendEntityPacket(EntityId, CloseInventoryPacketId);
       InventoryDialog.Dispose();
       InventoryDialog = null;
     }
@@ -168,12 +206,22 @@ namespace Mannequins {
       byEntity.RightHandItemSlot.TryPutInto(byEntity.World, sinkSlot.slot);
     }
 
+    protected virtual void DropInventory() {
+      foreach (var slot in GearInventory) {
+        if (slot.Empty) {
+          continue;
+        }
+
+        World.SpawnItemEntity(slot.TakeOutWhole(), SidedPos.XYZ);
+      }
+    }
+
     public override bool ReceiveDamage(DamageSource damageSource, float damage) {
       if (damageSource.Source == EnumDamageSource.Internal && damageSource.Type == EnumDamageType.Fire) {
         fireDamage += damage;
       }
       if (fireDamage > 4f) {
-        Die();
+        Die(EnumDespawnReason.Combusted);
       }
       return base.ReceiveDamage(damageSource, damage);
     }
