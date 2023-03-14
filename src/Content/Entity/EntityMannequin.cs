@@ -1,4 +1,6 @@
 using System.IO;
+using Mannequins.Client;
+using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Common.Entities;
 using Vintagestory.API.Datastructures;
@@ -16,6 +18,7 @@ namespace Mannequins {
     public override IInventory GearInventory => inv;
     public override ItemSlot RightHandItemSlot => inv[15];
     public override ItemSlot LeftHandItemSlot => inv[16];
+    protected InventoryDialog InventoryDialog { get; set; }
     protected virtual string InventoryId => "mannequingear-" + EntityId;
 
     public override void Initialize(EntityProperties properties, ICoreAPI api, long inChunkIndex3d) {
@@ -67,26 +70,29 @@ namespace Mannequins {
     }
 
     public override void OnInteract(EntityAgent byEntity, ItemSlot slot, Vec3d hitPosition, EnumInteractMode mode) {
-      IPlayer player = (byEntity as EntityPlayer)?.Player;
-      if (player == null) {
+      if (mode == EnumInteractMode.Attack) {
         return;
       }
 
-      if (!byEntity.World.Claims.TryAccess(player, Pos.AsBlockPos, EnumBlockAccessFlags.Use)) {
-        player.InventoryManager.ActiveHotbarSlot.MarkDirty();
-        WatchedAttributes.MarkAllDirty();
+      IPlayer byPlayer = (byEntity as EntityPlayer)?.Player;
+      if (byPlayer == null) {
         return;
       }
 
-      if (mode != EnumInteractMode.Interact || byEntity.RightHandItemSlot == null) {
+      if (!byEntity.World.Claims.TryAccess(byPlayer, Pos.AsBlockPos, EnumBlockAccessFlags.Use)) {
         return;
       }
 
-      if (byEntity.RightHandItemSlot.Empty) {
-        OnTakeClothes(byEntity, slot, hitPosition);
-      }
-      else {
-        OnPlaceClothes(byEntity, slot, hitPosition);
+      byPlayer.InventoryManager.OpenInventory(GearInventory);
+      if (Api is ICoreClientAPI capi && InventoryDialog == null) {
+        InventoryDialog = new InventoryDialog(inv, this, capi);
+        if (InventoryDialog.TryOpen()) {
+          capi.Network.SendPacketClient(inv.Open(byPlayer));
+        }
+        InventoryDialog.OnClosed += delegate {
+          InventoryDialog.Dispose();
+          InventoryDialog = null;
+        };
       }
     }
 
